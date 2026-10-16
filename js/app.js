@@ -5,8 +5,9 @@ import {
   LEVELS, STOOL_FLAGS, stoolLabel, EVENT_TYPES, REGIMEN_KINDS,
 } from './util.js';
 import { buildMarkdown, buildJSON, dataRange } from './export.js';
+import { buildChart, dayIndexAt, changesIn, kindIcon, CHART_W, EVENT_COLORS, KIND_COLORS } from './chart.js';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const $ = s => document.querySelector(s);
 const main = $('#main');
 const dlg = $('#dlg');
@@ -20,6 +21,7 @@ const S = {
   pending: false,
   histLimit: 60,
   histFrom: null, histTo: null, // historian aikaväli (null = kaikki)
+  chartDays: 30, chartSel: null, // kuvaajan aikaväli (0 = kaikki) ja valittu päivä
   unsubDogs: null, unsubDog: null,
   autoCreating: false,
   deferRender: false,
@@ -175,7 +177,7 @@ $('#tabbar').addEventListener('click', e => {
 function render() {
   document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('active', b.dataset.view === S.view));
   if (!S.dogId) return;
-  const v = { log: renderLog, regimens: renderRegimens, history: renderHistory, settings: renderSettings }[S.view];
+  const v = { log: renderLog, regimens: renderRegimens, history: renderHistory, chart: renderChart, settings: renderSettings }[S.view];
   main.innerHTML = v();
 }
 
@@ -406,6 +408,62 @@ function renderHistory() {
       ${rows}
       ${more ? '<button class="btn wide" style="margin-top:10px" data-act="more">Näytä lisää</button>' : ''}
     </section>`;
+}
+
+// --- Kuvaaja
+const CHART_PRESETS = [{ days: 14, label: '14 pv' }, { days: 30, label: '30 pv' }, { days: 90, label: '90 pv' }, { days: 0, label: 'Kaikki' }];
+
+function chartRange() {
+  const to = todayStr();
+  let from = S.chartDays ? addDays(to, -(S.chartDays - 1)) : dataRange(S.data).from;
+  if (!from || from > to) from = to;
+  if (daysBetween(from, to) < 6) from = addDays(to, -6);
+  if (daysBetween(from, to) > 3650) from = addDays(to, -3650);
+  return { from, to };
+}
+
+function renderChart() {
+  const { from, to } = chartRange();
+  const sel = S.chartSel && S.chartSel >= from && S.chartSel <= to ? S.chartSel : null;
+  const chip = p => `<button type="button" data-act="chartRange" data-days="${p.days}" class="${S.chartDays === p.days ? 'sel' : ''}">${p.label}</button>`;
+  const dot = c => `<span class="ch-dot" style="background:${c}"></span>`;
+  const changes = changesIn(S.data.regimens, from, to);
+  return `${localBanner()}
+    <section class="card chart-card">
+      <div class="chips compact">${CHART_PRESETS.map(chip).join('')}</div>
+      ${buildChart(S.data, from, to, sel)}
+      <p class="ch-legend">
+        <span class="g">${[0, 1, 2, 3].map(v => dot(`var(--l${v})`) + (v === 0 ? 'ei' : v)).join(' ')}</span>
+        <span class="g">${dot('#8a5aa8')}uloste ${dot('#c8382d')}verta</span>
+        <span class="g"><span style="color:${KIND_COLORS.food}">▶</span> aloitus <span style="color:${KIND_COLORS.food}">■</span> lopetus</span>
+      </p>
+    </section>
+    ${sel ? chartDayCard(sel) : '<p class="hint" style="text-align:center">Napauta kuvaajaa nähdäksesi päivän tiedot.</p>'}
+    ${changes.length ? `<section class="card">
+      <h2>Ruoka- ja lääkemuutokset</h2>
+      ${changes.map(c => `<div class="hsep${c.start ? '' : ' end'} tap" data-act="chartSel" data-date="${esc(c.date)}"><span style="color:${KIND_COLORS[c.r.kind]}">${c.start ? '▶' : '■'}</span> ${fiDate(c.date, false)} ${c.start ? 'aloitettu' : 'lopetettu'}: ${kindIcon(c.r.kind)} ${esc(c.r.name)}</div>`).join('')}
+    </section>` : ''}`;
+}
+
+function chartDayCard(date) {
+  const d = dayOf(date);
+  const evs = S.data.events.filter(e => e.date === date);
+  const chg = changesIn(S.data.regimens, date, date);
+  const lvl = (icon, label, v, c) => `<p class="ch-line-item">${icon} ${label}: ${v == null ? '<span class="muted">ei kirjattu</span>' : `<span class="badge l${v}">${v === 0 ? 'ei närästystä' : `${v} – ${LEVELS[v].long}`}</span>`}${c ? ` <span class="muted">${esc(c)}</span>` : ''}</p>`;
+  const stool = d.stool || [];
+  return `<section class="card">
+    <div class="ch-daynav">
+      <button class="btn small" data-act="chartStep" data-step="-1" aria-label="Edellinen päivä">‹</button>
+      <h2 style="margin:0;flex:1;justify-content:center">${fiDate(date)}</h2>
+      <button class="btn small" data-act="chartStep" data-step="1" aria-label="Seuraava päivä" ${date >= todayStr() ? 'disabled' : ''}>›</button>
+    </div>
+    ${lvl('🌙', 'Yö', d.nightLevel, d.nightComment)}
+    ${lvl('☀️', 'Päivä', d.dayLevel, d.dayComment)}
+    <p class="ch-line-item">💩 Uloste: ${stool.length ? stool.map(f => `<span class="badge ${f === 'verta' ? 'blood' : 'stool'}">${esc(stoolLabel(f))}</span>`).join(' ') : (dayHasRecord(d) ? 'normaali' : '<span class="muted">ei kirjattu</span>')}${d.stoolComment ? ` <span class="muted">${esc(d.stoolComment)}</span>` : ''}</p>
+    ${evs.map(e => `<p class="ch-line-item"><span class="ch-dot" style="background:${EVENT_COLORS[e.type]}"></span>${EVENT_TYPES[e.type]?.icon || ''} ${esc(e.text)}${e.comment ? ` <span class="muted">${esc(e.comment)}</span>` : ''}</p>`).join('')}
+    ${chg.map(c => `<p class="ch-line-item"><span style="color:${KIND_COLORS[c.r.kind]}">${c.start ? '▶' : '■'}</span> ${c.start ? 'Aloitettu' : 'Lopetettu'}: ${kindIcon(c.r.kind)} ${esc(c.r.name)}</p>`).join('')}
+    <button class="btn wide" style="margin-top:8px" data-act="openDay" data-date="${esc(date)}">✏️ Muokkaa päivää</button>
+  </section>`;
 }
 
 // --- Vienti ja asetukset
@@ -685,6 +743,21 @@ main.addEventListener('click', async e => {
     }
     case 'openDay': S.date = el.dataset.date; S.view = 'log'; render(); window.scrollTo(0, 0); break;
     case 'more': S.histLimit += 60; render(); break;
+    case 'chartRange': S.chartDays = Number(el.dataset.days); render(); break;
+    case 'chartSel': S.chartSel = el.dataset.date; render(); break;
+    case 'chartStep': {
+      const { from } = chartRange();
+      const next = addDays(S.chartSel || todayStr(), Number(el.dataset.step));
+      if (next <= todayStr() && next >= from) { S.chartSel = next; render(); }
+      break;
+    }
+    case 'chartTap': {
+      const r = el.getBoundingClientRect();
+      const i = dayIndexAt((e.clientX - r.left) / r.width * CHART_W, Number(el.dataset.n));
+      S.chartSel = addDays(el.dataset.from, i);
+      render();
+      break;
+    }
     case 'histPreset': S.histFrom = addDays(todayStr(), -(Number(el.dataset.days) - 1)); S.histTo = null; S.histLimit = 60; render(); break;
     case 'histAll': S.histFrom = S.histTo = null; S.histLimit = 60; render(); break;
     case 'exportMd': { const { from, to, text } = mdText(); download(text, `${fileBase()}-${from}_${to}.md`, 'text/markdown;charset=utf-8'); break; }

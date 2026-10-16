@@ -51,7 +51,7 @@ main { max-width: 640px; margin: 0 auto; padding: 12px 16px; }
 /* Alavalikko */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   background: var(--card);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
@@ -60,7 +60,7 @@ main { max-width: 640px; margin: 0 auto; padding: 12px 16px; }
   height: var(--tabbar-h);
   border: 0; background: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  font-size: 12px; color: var(--muted);
+  padding: 0 2px; font-size: 11px; line-height: 1.15; color: var(--muted);
 }
 .tabbar .ico { font-size: 22px; filter: grayscale(1); opacity: .7; }
 .tabbar button.active { color: var(--accent); font-weight: 650; }
@@ -212,3 +212,24 @@ body.locked .tabbar, body.locked .topbar, body.locked main { display: none; }
 
 .banner { background: #fbe9c8; color: #6b4a00; border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
 .today-link { display: block; margin: -4px auto 12px; }
+
+/* Kuvaaja */
+.chart { display: block; width: 100%; height: auto; margin: 4px 0 2px; touch-action: manipulation; cursor: pointer; }
+.chart .ch-title { font-size: 11px; font-weight: 650; fill: var(--ink); }
+.chart .ch-ax { font-size: 9px; fill: var(--muted); }
+.chart .ch-ico { font-size: 10px; }
+.chart .ch-grid { stroke: var(--line); stroke-width: .8; }
+.chart .ch-row { stroke: var(--line); stroke-width: .6; stroke-dasharray: 2 2; }
+.chart .ch-line { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-linejoin: round; opacity: .55; }
+.chart .ch-chg { stroke-width: 1.1; stroke-dasharray: 4 2; opacity: .8; }
+.chart .ch-chg.end { stroke-dasharray: 1.5 2; }
+.chart .ch-sel { fill: var(--accent-soft); }
+.ch-legend { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.8; }
+.ch-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 2px; }
+.ch-daynav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ch-line-item { margin: 6px 0; font-size: 15px; }
+.hsep.tap { cursor: pointer; }
+.chips.compact { flex-wrap: nowrap; gap: 6px; }
+.chips.compact button { flex: 1; min-width: 0; padding-left: 6px; padding-right: 6px; white-space: nowrap; }
+.chips.compact button.sel::before { content: none; }
+.ch-legend > span.g { white-space: nowrap; margin-right: 8px; }
