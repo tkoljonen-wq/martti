@@ -15,6 +15,12 @@ Ilman Firebase-asetuksia sovellus toimii **paikallisessa testitilassa**: tiedot 
 
 "Yö" tarkoittaa kirjauspäivää edeltävää yötä (kirjataan aamulla).
 
+**Vakiovastaukset:** herkun, kielletyn, satunnaisen lääkkeen ja muistiinpanon tekstin voi tallentaa vakiovastaukseksi ("Tallenna vakiovastaukseksi"). Jatkossa sen voi valita valikosta tai kirjoittaa vapaan tekstin. Jokaisella tyypillä on oma listansa, ja listat tallentuvat koiran tietoihin (`treatTemplates`, `forbiddenTemplates`, `medTemplates`, `noteTemplates`), joten ne ovat yhteisiä kaikille käyttäjille ja tulevat varmuuskopion mukana.
+
+## Kuvaaja
+
+Kuvaaja-välilehdellä näkyvät närästys yöllä ja päivällä omina viivakuvaajinaan (puuttuva kirjaus katkaisee viivan) sekä merkintärivit ulosteelle (veri punaisella) ja satunnaisille tapahtumille. Ruoka- ja lääkemuutokset näkyvät pystyviivoina (▶ aloitus, ■ lopetus). Kun kuvaajaa napauttaa, sen päivän tiedot avautuvat kuvaajan alle. Aikaväliksi voi valita 14, 30 tai 90 päivää tai kaikki tiedot.
+
 ## Vienti tekoälylle
 
 Vienti-sivulta saat **Markdown-tiedoston** (.md), jossa on tulkintaohjeet, ruoka- ja lääkityshistoria sekä päiväkohtaiset kirjaukset jaksoittain. Jakso vaihtuu aina, kun perusravinto tai lääkitys muuttuu, ja jokaisella jaksolla on oma yhteenveto. Tiedoston voi antaa tekoälylle liitteenä tai jakaa suoraan puhelimen jakovalikosta. JSON-varmuuskopiossa on sama data koneluettavassa muodossa, ja sen voi myös tuoda takaisin sovellukseen.
@@ -29,6 +35,7 @@ Käytössä: Google-kirjautuminen, sallittu domain `tkoljonen-wq.github.io`, Fir
 
 - Julkaistu: https://tkoljonen-wq.github.io/martti/
 - Testattu: kirjautuminen ja pilvitallennus localhostissa (tkoljonen@gmail.com)
+- Versio 1.3.0: vakiovastaukset ja Kuvaaja-välilehti
 - Asennettu Android-puhelimiin (Timo ja Pia). Jos Chrome väittää sovelluksen olevan "jo asennettu", päivitä sivu kahdesti ja sulje välilehti, jotta uusi manifest otetaan käyttöön.
 
 **Uuden käyttäjän lisääminen:**
@@ -68,6 +75,7 @@ Avaa http://localhost:8080. `localhost` on Firebasen sallituissa domaineissa ole
 - `js/app.js`: näkymät ja toiminnot
 - `js/store.js`: tietovarasto (Firestore tai paikallinen testitila)
 - `js/export.js`: Markdown- ja JSON-vienti
+- `js/chart.js`: Kuvaaja-välilehden SVG-kuvaaja
 - `js/util.js`: päivämäärät, vakiot
 - `sw.js`: service worker (network first, välimuistin etuliite `martti-paivakirja-`)
 - `manifest.json`, `icons/`: PWA (PNG-ikonit WebAPK-asennusta varten, manifestissa oma `id`)
