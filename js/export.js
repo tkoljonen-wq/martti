@@ -117,7 +117,7 @@ export function buildJSON(dog, data) {
     app: 'martti-paivakirja',
     format: 1,
     exportedAt: new Date().toISOString(),
-    dog: { name: dog.name, background: dog.background || '' },
+    dog: { name: dog.name, background: dog.background || '', noteTemplates: dog.noteTemplates || [] },
     scales: {
       heartburn: Object.fromEntries(LEVELS.map(l => [l.v, l.long])),
       stool: Object.fromEntries(STOOL_FLAGS.map(f => [f.id, f.label])),
