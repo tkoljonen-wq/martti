@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sovellusta saavat käyttää vain nämä Google-tilit
+    function allowed() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['tkoljonen@gmail.com', 'koljonen.pia@gmail.com'];
+    }
+    function me() {
+      return request.auth.token.email;
+    }
+    function isMember(dogId) {
+      return me() in get(/databases/$(database)/documents/dogs/$(dogId)).data.members;
+    }
+
+    // Koira ja sen kirjaukset näkyvät kaikille koiran members-listalla oleville
+    match /dogs/{dogId} {
+      allow read: if allowed() && me() in resource.data.members;
+      allow create: if allowed() && me() in request.resource.data.members;
+      allow update: if allowed() && me() in resource.data.members && me() in request.resource.data.members;
+      allow delete: if false;
+
+      match /{collection}/{docId} {
+        allow read, write: if allowed() && isMember(dogId);
+      }
+    }
+  }
+}

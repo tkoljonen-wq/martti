@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Martin päiväkirja</title>
+  <meta name="description" content="Koiran ravitsemus- ja oirepäiväkirja">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f4f1ea">
+  <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="logo" aria-hidden="true">🐾</span>
+    <select id="dogSelect" aria-label="Valitse koira"></select>
+    <span id="syncStatus" class="sync"></span>
+  </header>
+
+  <main id="main"><p class="loading">Ladataan…</p></main>
+
+  <section id="login" class="login" hidden>
+    <div class="card">
+      <div class="big-logo">🐾</div>
+      <h1>Martin päiväkirja</h1>
+      <p>Ravitsemus- ja oirepäiväkirja. Kirjaudu, niin tiedot tallentuvat pilveen ja näkyvät kaikilla laitteillasi.</p>
+      <button id="loginBtn" class="btn primary wide">Kirjaudu Google-tilillä</button>
+      <p id="loginError" class="error"></p>
+    </div>
+  </section>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-view="log"><span class="ico">✏️</span><span>Kirjaa</span></button>
+    <button data-view="regimens"><span class="ico">🍲</span><span>Ruoka &amp; lääkkeet</span></button>
+    <button data-view="history"><span class="ico">📅</span><span>Historia</span></button>
+    <button data-view="settings"><span class="ico">📤</span><span>Vienti</span></button>
+  </nav>
+
+  <dialog id="dlg"></dialog>
+  <div id="toast" role="status"></div>
+
+  <script type="module" src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(e => console.warn('SW', e));
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+:root {
+  --bg: #f4f1ea;
+  --card: #ffffff;
+  --ink: #26302c;
+  --muted: #6c746f;
+  --line: #e2ddd2;
+  --accent: #2f6f5e;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcebe5;
+  --l0: #3c9a5f;
+  --l1: #d9a800;
+  --l2: #e07b00;
+  --l3: #c8382d;
+  --warn: #b5482f;
+  --radius: 14px;
+  --tabbar-h: 64px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* Yläpalkki */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.logo { font-size: 22px; }
+.topbar select {
+  flex: 1; min-width: 0;
+  font-size: 19px; font-weight: 650;
+  border: 0; background: transparent; padding: 6px 0;
+}
+.sync { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.sync.pending { color: var(--l2); }
+
+main { max-width: 640px; margin: 0 auto; padding: 12px 16px; }
+.loading { text-align: center; color: var(--muted); margin-top: 40px; }
+
+/* Alavalikko */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar button {
+  height: var(--tabbar-h);
+  border: 0; background: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 12px; color: var(--muted);
+}
+.tabbar .ico { font-size: 22px; filter: grayscale(1); opacity: .7; }
+.tabbar button.active { color: var(--accent); font-weight: 650; }
+.tabbar button.active .ico { filter: none; opacity: 1; }
+
+/* Kortit */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.card h2 { font-size: 17px; margin: 0 0 10px; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.card h2 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.hint { color: var(--muted); font-size: 13px; margin: -4px 0 10px; }
+.muted { color: var(--muted); }
+h3 { font-size: 15px; margin: 14px 0 6px; color: var(--muted); }
+
+/* Päivämääräpalkki */
+.datebar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.datebar .navbtn {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--card);
+  font-size: 24px; line-height: 1;
+}
+.datebar .navbtn:disabled { opacity: .35; }
+.datepick { flex: 1; position: relative; text-align: center; }
+.datepick .lbl { font-size: 18px; font-weight: 650; display: block; }
+.datepick .sub { font-size: 13px; color: var(--muted); }
+.datepick input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; }
+
+/* Tasonapit */
+.levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+.levels button {
+  height: 52px; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--card);
+  font-size: 18px; font-weight: 650;
+}
+.levels button small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+.levels button.sel { color: #fff; }
+.levels button.sel small { color: rgba(255,255,255,.9); }
+.levels button.sel[data-level="0"] { background: var(--l0); border-color: var(--l0); }
+.levels button.sel[data-level="1"] { background: var(--l1); border-color: var(--l1); }
+.levels button.sel[data-level="2"] { background: var(--l2); border-color: var(--l2); }
+.levels button.sel[data-level="3"] { background: var(--l3); border-color: var(--l3); }
+
+/* Valintasirut */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.chips button {
+  min-height: 44px; padding: 8px 14px; border-radius: 22px;
+  border: 2px solid var(--line); background: var(--card);
+}
+.chips button.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chips button.sel::before { content: "✓ "; }
+
+input.comment, .field input, .field textarea, .field select {
+  width: 100%; padding: 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: #fbfaf7;
+}
+input.comment:focus, .field input:focus, .field textarea:focus, .field select:focus {
+  outline: 2px solid var(--accent); border-color: transparent; background: #fff;
+}
+.field { display: block; margin-bottom: 12px; }
+.field > span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.field textarea { min-height: 80px; resize: vertical; }
+
+/* Painikkeet */
+.btn {
+  min-height: 46px; padding: 10px 16px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--card); font-weight: 600;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { color: var(--warn); border-color: #ecc7bd; }
+.btn.small { min-height: 36px; padding: 6px 12px; font-size: 14px; }
+.btn.wide { width: 100%; }
+.btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.btnrow .btn { flex: 1 1 auto; }
+.addgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.addgrid .btn { text-align: left; font-weight: 500; font-size: 14px; }
+
+/* Listat */
+.list { list-style: none; margin: 0; padding: 0; }
+.list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.list li:last-child { border-bottom: 0; }
+.list .grow { flex: 1; min-width: 0; }
+.list .title { font-weight: 600; overflow-wrap: anywhere; }
+.list .meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.list li.click { cursor: pointer; }
+.list .ico { font-size: 20px; width: 26px; text-align: center; }
+.empty { color: var(--muted); font-size: 14px; margin: 4px 0; }
+
+/* Historia */
+.hrow { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.hrow .d { width: 78px; flex: none; font-size: 14px; }
+.hrow .d b { display: block; }
+.hrow .d span { color: var(--muted); font-size: 12px; }
+.hrow .cells { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 13px; padding: 3px 8px; border-radius: 10px;
+  background: #eee9df; color: var(--ink); white-space: nowrap;
+}
+.badge.l0 { background: #dff0e4; color: #22603a; }
+.badge.l1 { background: #f7ecc2; color: #6b5300; }
+.badge.l2 { background: #fbe0c2; color: #874800; }
+.badge.l3 { background: #f6d1cc; color: #8a1e15; }
+.badge.stool { background: #ece2f3; color: #55306e; }
+.badge.blood { background: #f6d1cc; color: #8a1e15; font-weight: 650; }
+.hsep { font-size: 13px; color: var(--accent); padding: 8px 0 4px; font-weight: 600; border-bottom: 1px solid var(--line); }
+.hsep.end { color: var(--muted); }
+.nodata { color: var(--muted); font-size: 13px; }
+
+/* Dialogi */
+dialog {
+  width: min(560px, calc(100vw - 24px));
+  border: 0; border-radius: 18px; padding: 18px 16px;
+  background: var(--card); color: var(--ink);
+  max-height: calc(100dvh - 40px);
+}
+dialog::backdrop { background: rgba(20,30,25,.45); }
+dialog h2 { margin: 0 0 14px; font-size: 19px; }
+
+/* Ilmoitus */
+#toast {
+  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px);
+  transform: translateX(-50%) translateY(20px);
+  background: #26302c; color: #fff; padding: 10px 16px; border-radius: 22px;
+  font-size: 14px; opacity: 0; pointer-events: none; transition: .25s; z-index: 50;
+  max-width: calc(100vw - 32px); text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Kirjautuminen */
+.login[hidden] { display: none; }
+.login { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: grid; place-items: center; padding: 16px; }
+.login .card { max-width: 420px; text-align: center; padding: 28px 22px; }
+.big-logo { font-size: 56px; }
+.login h1 { margin: 6px 0 8px; font-size: 24px; }
+.error { color: var(--warn); font-size: 14px; }
+body.locked .tabbar, body.locked .topbar, body.locked main { display: none; }
+
+.banner { background: #fbe9c8; color: #6b4a00; border-radius: 12px; padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
+.today-link { display: block; margin: -4px auto 12px; }
