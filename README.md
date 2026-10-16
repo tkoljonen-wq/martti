@@ -29,7 +29,7 @@ Käytössä: Google-kirjautuminen, sallittu domain `tkoljonen-wq.github.io`, Fir
 
 - Julkaistu: https://tkoljonen-wq.github.io/martti/
 - Testattu: kirjautuminen ja pilvitallennus localhostissa (tkoljonen@gmail.com)
-- Testaamatta: kirjautuminen julkaistulla sivulla, Pian tili, asennus Android-puhelimeen
+- Asennettu Android-puhelimiin (Timo ja Pia). Jos Chrome väittää sovelluksen olevan "jo asennettu", päivitä sivu kahdesti ja sulje välilehti, jotta uusi manifest otetaan käyttöön.
 
 **Uuden käyttäjän lisääminen:**
 1. Lisää sähköpostiosoite sääntöjen `allowed()`-listaan ([`firestore.rules`](firestore.rules)) ja julkaise säännöt Firebase-konsolissa (Firestore → Rules → Publish).
