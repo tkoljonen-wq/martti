@@ -2,7 +2,7 @@
 // Origin (tkoljonen-wq.github.io) on jaettu muiden sovellusten kanssa → välimuistilla oma etuliite,
 // ja vain tämän sovelluksen vanhat välimuistit poistetaan.
 const CACHE_PREFIX = 'martti-paivakirja-';
-const CACHE_NAME = CACHE_PREFIX + 'v1';
+const CACHE_NAME = CACHE_PREFIX + 'v2';
 
 const ASSETS = [
   './',
@@ -14,9 +14,10 @@ const ASSETS = [
   './js/util.js',
   './firebase-config.js',
   './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-maskable.png',
   './icons/icon-192.svg',
-  './icons/icon-512.svg',
-  './icons/icon-maskable.svg',
 ];
 
 self.addEventListener('install', event => {

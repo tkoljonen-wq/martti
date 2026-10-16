@@ -70,5 +70,5 @@ Avaa http://localhost:8080. `localhost` on Firebasen sallituissa domaineissa ole
 - `js/export.js`: Markdown- ja JSON-vienti
 - `js/util.js`: päivämäärät, vakiot
 - `sw.js`: service worker (network first, välimuistin etuliite `martti-paivakirja-`)
-- `manifest.json`, `icons/`: PWA
+- `manifest.json`, `icons/`: PWA (PNG-ikonit WebAPK-asennusta varten, manifestissa oma `id`)
 - `firestore.rules`: Firestoren tietoturvasäännöt

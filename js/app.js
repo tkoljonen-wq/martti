@@ -178,6 +178,30 @@ function render() {
   main.innerHTML = v();
 }
 
+// ------------------------------------------------------------ asennus (oma painike)
+const installHtml = () => window.__installPrompt
+  ? '<button class="btn primary wide" data-act="install" style="margin-bottom:12px">📲 Asenna Martin päiväkirja puhelimeen</button>'
+  : '';
+async function doInstall() {
+  const evt = window.__installPrompt;
+  if (!evt) return;
+  // Tapahtuma on kertakäyttöinen: prompt() voi kutsua vain kerran
+  window.__installPrompt = null;
+  updateInstallUI();
+  try {
+    await evt.prompt();
+    await evt.userChoice;
+  } catch {
+    toast('Asennusikkunan avaaminen epäonnistui');
+  }
+}
+function updateInstallUI() {
+  $('#loginInstall').hidden = !window.__installPrompt;
+  if (S.dogId) requestRender();
+}
+document.addEventListener('installprompt-ready', updateInstallUI);
+$('#loginInstall').addEventListener('click', doInstall);
+
 function localBanner() {
   return S.store.cloud ? '' :
     '<div class="banner">Paikallinen testitila: tiedot tallentuvat vain tähän selaimeen. Pilvisynkronointi otetaan käyttöön lisäämällä Firebase-asetukset (ks. README).</div>';
@@ -222,6 +246,7 @@ function renderLog() {
     <button class="navbtn" data-act="next" aria-label="Seuraava päivä" ${S.date >= today ? 'disabled' : ''}>›</button>
   </div>
   ${S.date !== today ? '<button class="btn small today-link" data-act="today">↩ Siirry tähän päivään</button>' : ''}
+  ${installHtml()}
   ${localBanner()}
   ${levelCard('nightLevel', 'nightComment', '🌙 Närästys yöllä', 'edeltävä yö', d)}
   ${levelCard('dayLevel', 'dayComment', '☀️ Närästys päivällä', '', d)}
@@ -353,7 +378,7 @@ function renderSettings() {
   const r = dataRange(S.data);
   const d = dog() || {};
   const canShare = !!(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.md', { type: 'text/plain' })] }));
-  return `${localBanner()}
+  return `${installHtml()}${localBanner()}
   <section class="card">
     <h2>📤 Vienti tekoälylle</h2>
     <p class="hint">Markdown-tiedosto sisältää tulkintaohjeet, ruokavalio- ja lääkityshistorian sekä päiväkohtaiset kirjaukset jaksoittain. Anna se tekoälylle liitteenä tai liitä sisältö keskusteluun.</p>
@@ -611,6 +636,7 @@ main.addEventListener('click', async e => {
       break;
     }
     case 'addDog': addDogPrompt(); break;
+    case 'install': doInstall(); break;
     case 'addMember': {
       const email = $('#newMember').value.trim().toLowerCase();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('Tarkista sähköpostiosoite'); break; }
@@ -660,4 +686,5 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && S.dogId && !isEditing()) render();
 });
 
+updateInstallUI();
 init();

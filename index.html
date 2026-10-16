@@ -8,8 +8,21 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f4f1ea">
   <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Asennustapahtuma talteen heti, ettei se laukea ennen moduuliskriptin latautumista
+    window.__installPrompt = null;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      window.__installPrompt = e;
+      document.dispatchEvent(new Event('installprompt-ready'));
+    });
+    window.addEventListener('appinstalled', () => {
+      window.__installPrompt = null;
+      document.dispatchEvent(new Event('installprompt-ready'));
+    });
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -26,6 +39,7 @@
       <h1>Martin päiväkirja</h1>
       <p>Ravitsemus- ja oirepäiväkirja. Kirjaudu, niin tiedot tallentuvat pilveen ja näkyvät kaikilla laitteillasi.</p>
       <button id="loginBtn" class="btn primary wide">Kirjaudu Google-tilillä</button>
+      <button id="loginInstall" class="btn wide" style="margin-top:10px" hidden>📲 Asenna sovellus</button>
       <p id="loginError" class="error"></p>
     </div>
   </section>
