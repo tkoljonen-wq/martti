@@ -6,7 +6,7 @@ import {
 } from './util.js';
 import { buildMarkdown, buildJSON, dataRange } from './export.js';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const $ = s => document.querySelector(s);
 const main = $('#main');
 const dlg = $('#dlg');
@@ -470,23 +470,27 @@ function datalist(id, values) {
   return `<datalist id="${id}">${uniq.map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
 }
 
+// Vakiovastaukset tallennetaan koiran tietoihin tyypeittäin: noteTemplates, treatTemplates, …
+const tplKeyOf = type => `${type}Templates`;
+
 function openEventDialog(ev) {
   const T = EVENT_TYPES[ev.type];
   const isNote = ev.type === 'note';
   const isNew = !ev.id;
-  const tpls = isNote ? (dog()?.noteTemplates || []) : [];
+  const tplKey = tplKeyOf(ev.type);
+  const tpls = [...(dog()?.[tplKey] || [])];
   dlg.innerHTML = `<form method="dialog" id="evForm">
     <h2>${T.icon} ${T.label}</h2>
     <label class="field"><span>Päivämäärä</span><input type="date" name="date" value="${esc(ev.date)}" max="${todayStr()}" required></label>
+    ${tpls.length ? `<label class="field"><span>Vakiovastaus</span><span class="tplrow">
+      <select id="tplSel"><option value="">Valitse valikosta tai kirjoita alle…</option>${tpls.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select>
+      <button type="button" class="btn small danger" id="tplDel" hidden title="Poista vakiovastaus">🗑</button></span></label>` : ''}
     ${isNote
-      ? `${tpls.length ? `<label class="field"><span>Vakiovastaus</span><span class="tplrow">
-           <select id="tplSel"><option value="">Valitse valikosta tai kirjoita alle…</option>${tpls.map((t, i) => `<option value="${i}">${esc(t)}</option>`).join('')}</select>
-           <button type="button" class="btn small danger" id="tplDel" hidden title="Poista vakiovastaus">🗑</button></span></label>` : ''}
-         <label class="field"><span>${T.what}</span><textarea name="text" required>${esc(ev.text || '')}</textarea></label>
-         <label class="checkline"><input type="checkbox" name="saveTpl"> Tallenna vakiovastaukseksi</label>`
+      ? `<label class="field"><span>${T.what}</span><textarea name="text" required>${esc(ev.text || '')}</textarea></label>`
       : `<label class="field"><span>${T.what}</span><input name="text" list="evList" value="${esc(ev.text || '')}" required autocomplete="off"></label>
-         ${datalist('evList', S.data.events.filter(e => e.type === ev.type).map(e => e.text))}
-         <label class="field"><span>Kommentti (vapaaehtoinen)</span><textarea name="comment">${esc(ev.comment || '')}</textarea></label>`}
+         ${datalist('evList', S.data.events.filter(e => e.type === ev.type).map(e => e.text))}`}
+    <label class="checkline"><input type="checkbox" name="saveTpl"> Tallenna vakiovastaukseksi</label>
+    ${!isNote ? `<label class="field"><span>Kommentti (vapaaehtoinen)</span><textarea name="comment">${esc(ev.comment || '')}</textarea></label>` : ''}
     <div class="btnrow">
       <button class="btn primary" value="save">Tallenna</button>
       ${!isNew ? '<button class="btn danger" value="delete" formnovalidate>Poista</button>' : ''}
@@ -499,13 +503,13 @@ function openEventDialog(ev) {
     const del = $('#tplDel');
     sel.addEventListener('change', () => {
       del.hidden = sel.value === '';
-      if (sel.value !== '') form.elements.text.value = tpls[sel.value];
+      if (sel.value !== '') form.elements.text.value = sel.value;
     });
     del.addEventListener('click', () => {
-      const t = tpls[sel.value];
-      if (t === undefined || !confirm(`Poistetaanko vakiovastaus "${t}"?`)) return;
-      S.store.updateDog(S.dogId, { noteTemplates: tpls.filter(x => x !== t) });
-      tpls.splice(Number(sel.value), 1);
+      const t = sel.value;
+      if (!t || !confirm(`Poistetaanko vakiovastaus "${t}"?`)) return;
+      tpls.splice(tpls.indexOf(t), 1);
+      S.store.updateDog(S.dogId, { [tplKey]: [...tpls] });
       sel.selectedOptions[0].remove();
       sel.value = ''; del.hidden = true;
       toast('Vakiovastaus poistettu');
@@ -530,7 +534,7 @@ function openEventDialog(ev) {
         createdAt: ev.createdAt || new Date().toISOString(),
       });
       if (f.get('saveTpl') && !tpls.includes(text)) {
-        S.store.updateDog(S.dogId, { noteTemplates: [...tpls, text].sort((a, b) => a.localeCompare(b, 'fi')) });
+        S.store.updateDog(S.dogId, { [tplKey]: [...tpls, text].sort((a, b) => a.localeCompare(b, 'fi')) });
       }
       toast('Tallennettu');
     }
@@ -630,11 +634,13 @@ async function importFile(file) {
     const n = data.days.length + data.events.length + data.regimens.length;
     if (!confirm(`Tuodaanko ${n} tietuetta (${data.dog?.name || '?'}) koiralle ${dog().name}? Saman tunnisteen tiedot korvataan.`)) return;
     const count = await S.store.importData(S.dogId, data);
-    const imported = Array.isArray(data.dog?.noteTemplates) ? data.dog.noteTemplates.filter(t => typeof t === 'string' && t.trim()) : [];
-    const own = dog().noteTemplates || [];
-    if (imported.some(t => !own.includes(t))) {
-      S.store.updateDog(S.dogId, { noteTemplates: [...new Set([...own, ...imported])].sort((a, b) => a.localeCompare(b, 'fi')) });
-    }
+    const tplPatch = {};
+    Object.keys(EVENT_TYPES).map(tplKeyOf).forEach(k => {
+      const imported = Array.isArray(data.dog?.[k]) ? data.dog[k].filter(t => typeof t === 'string' && t.trim()) : [];
+      const own = dog()[k] || [];
+      if (imported.some(t => !own.includes(t))) tplPatch[k] = [...new Set([...own, ...imported])].sort((a, b) => a.localeCompare(b, 'fi'));
+    });
+    if (Object.keys(tplPatch).length) S.store.updateDog(S.dogId, tplPatch);
     toast(`Tuotu ${count} tietuetta`);
   } catch (e) {
     alert('Tuonti epäonnistui: ' + e.message);
