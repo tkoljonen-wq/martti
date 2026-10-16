@@ -21,7 +21,15 @@ Vienti-sivulta saat **Markdown-tiedoston** (.md), jossa on tulkintaohjeet, ruoka
 
 ## Firebase (projekti `martti-paivakirja`)
 
-Valmiina: Google-kirjautuminen, sallittu domain `tkoljonen-wq.github.io`, Firestore (europe-north1) ja säännöt. Puuttuu vain `apiKey` tiedostosta `firebase-config.js`.
+Käytössä: Google-kirjautuminen, sallittu domain `tkoljonen-wq.github.io`, Firestore (europe-north1) ja säännöt ([`firestore.rules`](firestore.rules)).
+
+**API-avain** (`firebase-config.js`) on Firebasen julkinen web-avain, ei salaisuus. Se on rajattu Google Cloud Consolessa (APIs & Services → Credentials → Browser key → Website restrictions) osoitteisiin `https://tkoljonen-wq.github.io/*`, `https://martti-paivakirja.firebaseapp.com/*` ja `http://localhost:8080/*`. Jos sovellusta ajetaan jostain muusta osoitteesta (esim. eri portista), lisää se listaan. GitHubin secret scanning -hälytys avaimesta on suljettu perusteella "won't fix".
+
+## Tila (16.10.2026)
+
+- Julkaistu: https://tkoljonen-wq.github.io/martti/
+- Testattu: kirjautuminen ja pilvitallennus localhostissa (tkoljonen@gmail.com)
+- Testaamatta: kirjautuminen julkaistulla sivulla, Pian tili, asennus Android-puhelimeen
 
 **Uuden käyttäjän lisääminen:**
 1. Lisää sähköpostiosoite sääntöjen `allowed()`-listaan ([`firestore.rules`](firestore.rules)) ja julkaise säännöt Firebase-konsolissa (Firestore → Rules → Publish).
