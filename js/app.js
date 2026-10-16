@@ -19,6 +19,7 @@ const S = {
   view: 'log',
   pending: false,
   histLimit: 60,
+  histFrom: null, histTo: null, // historian aikaväli (null = kaikki)
   unsubDogs: null, unsubDog: null,
   autoCreating: false,
   deferRender: false,
@@ -328,11 +329,21 @@ function summary(days) {
   return `<b>${recs.length}</b> kirjattua pv · yö ka <b>${avgOf(recs.map(d => d.nightLevel))}</b> · päivä ka <b>${avgOf(recs.map(d => d.dayLevel))}</b> · poikkeava uloste <b>${loose}</b> pv${blood ? ` · <span style="color:var(--l3)">verta ${blood} pv</span>` : ''}`;
 }
 
-function renderHistory() {
+// Historian aikaväli: oletuksena ensimmäisestä kirjauksesta tähän päivään
+function histRange() {
   const today = todayStr();
-  const from = dataRange(S.data).from;
-  const total = Math.max(1, daysBetween(from, today) + 1);
-  const n = Math.min(total, S.histLimit);
+  const first = dataRange(S.data).from;
+  let from = S.histFrom || first, to = S.histTo || today;
+  if (to > today) to = today;
+  if (from > to) [from, to] = [to, from];
+  return { from, to, first, today };
+}
+const HIST_PRESETS = [{ days: 30, label: '30 pv' }, { days: 90, label: '3 kk' }, { days: 365, label: 'Vuosi' }];
+
+function renderHistory() {
+  const { from, to, first, today } = histRange();
+  const filtered = !!(S.histFrom || S.histTo);
+  const total = daysBetween(from, to) + 1;
   const last = k => Array.from({ length: k }, (_, i) => addDays(today, -i));
   const starts = {}, ends = {};
   S.data.regimens.forEach(r => {
@@ -341,35 +352,59 @@ function renderHistory() {
   });
   const evByDate = {};
   S.data.events.forEach(e => (evByDate[e.date] ||= []).push(e));
+  const thisYear = today.slice(0, 4);
 
-  let rows = '';
-  for (let i = 0; i < n; i++) {
-    const date = addDays(today, -i);
-    (ends[date] || []).forEach(r => { rows += `<div class="hsep end">■ Lopetettu ${fiDate(date, false)}: ${REGIMEN_KINDS[r.kind].icon} ${esc(r.name)}</div>`; });
+  // Vain päivät, joilla on kirjauksia; histLimit rajaa näytettävien päivien määrää
+  let rows = '', shown = 0, more = false;
+  for (let i = 0; i < total; i++) {
+    const date = addDays(to, -i);
     const d = S.data.days[date];
     const evs = evByDate[date] || [];
-    let cells = '';
-    if (dayHasRecord(d)) {
-      cells += badgeLevel('🌙', d.nightLevel) + badgeLevel('☀️', d.dayLevel);
-      (d.stool || []).forEach(f => { cells += `<span class="badge ${f === 'verta' ? 'blood' : 'stool'}">${esc(stoolLabel(f))}</span>`; });
-      if (d.nightComment || d.dayComment || d.stoolComment) cells += '<span class="badge">💬</span>';
+    const has = dayHasRecord(d) || evs.length > 0;
+    if (has && shown >= S.histLimit) { more = true; break; }
+    (ends[date] || []).forEach(r => { rows += `<div class="hsep end">■ Lopetettu ${fiDate(date, false)}: ${REGIMEN_KINDS[r.kind].icon} ${esc(r.name)}</div>`; });
+    if (has) {
+      shown++;
+      let cells = '';
+      if (dayHasRecord(d)) {
+        cells += badgeLevel('🌙', d.nightLevel) + badgeLevel('☀️', d.dayLevel);
+        (d.stool || []).forEach(f => { cells += `<span class="badge ${f === 'verta' ? 'blood' : 'stool'}">${esc(stoolLabel(f))}</span>`; });
+        if (d.nightComment || d.dayComment || d.stoolComment) cells += '<span class="badge">💬</span>';
+      }
+      evs.forEach(e => { cells += `<span class="badge" title="${esc(e.text)}">${EVENT_TYPES[e.type]?.icon || '•'} ${esc(e.text.length > 18 ? e.text.slice(0, 17) + '…' : e.text)}</span>`; });
+      const [wd, dm] = fiDate(date).split(' ');
+      const year = date.slice(0, 4) !== thisYear ? ` ${date.slice(0, 4)}` : '';
+      rows += `<div class="hrow" data-act="openDay" data-date="${esc(date)}"><div class="d"><b>${dm.split('.').slice(0, 2).join('.')}.${year}</b><span>${wd}${date === today ? ' · tänään' : ''}</span></div><div class="cells">${cells}</div></div>`;
     }
-    evs.forEach(e => { cells += `<span class="badge" title="${esc(e.text)}">${EVENT_TYPES[e.type]?.icon || '•'} ${esc(e.text.length > 18 ? e.text.slice(0, 17) + '…' : e.text)}</span>`; });
-    if (!cells) cells = '<span class="nodata">ei kirjausta</span>';
-    const [wd, dm] = fiDate(date).split(' ');
-    rows += `<div class="hrow" data-act="openDay" data-date="${esc(date)}"><div class="d"><b>${dm.split('.').slice(0, 2).join('.')}.</b><span>${wd}${i === 0 ? ' · tänään' : ''}</span></div><div class="cells">${cells}</div></div>`;
     (starts[date] || []).forEach(r => { rows += `<div class="hsep">▶ Aloitettu ${fiDate(date, false)}: ${REGIMEN_KINDS[r.kind].icon} ${esc(r.name)}</div>`; });
   }
+  if (!shown) rows += '<p class="nodata" style="margin:10px 0 0">Ei kirjauksia valitulla aikavälillä.</p>';
+
+  const preset = HIST_PRESETS.find(p => S.histTo == null && S.histFrom === addDays(today, -(p.days - 1)));
+  const chip = (act, label, sel, extra = '') => `<button type="button" data-act="${act}"${extra} class="${sel ? 'sel' : ''}">${label}</button>`;
+  const rangeDays = Array.from({ length: Math.min(total, 3650) }, (_, i) => addDays(to, -i));
   return `${localBanner()}
     <section class="card">
       <h2>Yhteenveto</h2>
       <p style="margin:0 0 6px;font-size:14px"><span class="muted">7 pv:</span> ${summary(last(7))}</p>
       <p style="margin:0;font-size:14px"><span class="muted">30 pv:</span> ${summary(last(30))}</p>
+      ${filtered ? `<p style="margin:6px 0 0;font-size:14px"><span class="muted">${fiDate(from, false)}–${fiDate(to, false)}:</span> ${summary(rangeDays)}</p>` : ''}
+    </section>
+    <section class="card">
+      <h2>Aikaväli</h2>
+      <div class="chips">
+        ${HIST_PRESETS.map(p => chip('histPreset', p.label, preset === p, ` data-days="${p.days}"`)).join('')}
+        ${chip('histAll', 'Kaikki', !filtered)}
+      </div>
+      <div class="btnrow">
+        <label class="field" style="flex:1;margin:0"><span>Alkaen</span><input type="date" id="histFrom" value="${esc(from)}" max="${esc(today)}"></label>
+        <label class="field" style="flex:1;margin:0"><span>Päättyen</span><input type="date" id="histTo" value="${esc(to)}" max="${esc(today)}"></label>
+      </div>
     </section>
     <section class="card">
       <h2>Päivät <small>napauta muokataksesi</small></h2>
       ${rows}
-      ${n < total ? '<button class="btn wide" style="margin-top:10px" data-act="more">Näytä lisää</button>' : ''}
+      ${more ? '<button class="btn wide" style="margin-top:10px" data-act="more">Näytä lisää</button>' : ''}
     </section>`;
 }
 
@@ -614,6 +649,8 @@ main.addEventListener('click', async e => {
     }
     case 'openDay': S.date = el.dataset.date; S.view = 'log'; render(); window.scrollTo(0, 0); break;
     case 'more': S.histLimit += 60; render(); break;
+    case 'histPreset': S.histFrom = addDays(todayStr(), -(Number(el.dataset.days) - 1)); S.histTo = null; S.histLimit = 60; render(); break;
+    case 'histAll': S.histFrom = S.histTo = null; S.histLimit = 60; render(); break;
     case 'exportMd': { const { from, to, text } = mdText(); download(text, `${fileBase()}-${from}_${to}.md`, 'text/markdown;charset=utf-8'); break; }
     case 'shareMd': {
       const { from, to, text } = mdText();
@@ -658,6 +695,12 @@ main.addEventListener('click', async e => {
 main.addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'dateInput' && t.value) { S.date = t.value > todayStr() ? todayStr() : t.value; render(); return; }
+  if (t.id === 'histFrom' || t.id === 'histTo') {
+    // Tyhjä kenttä = rajaton; tähän päivään päättyvä väli seuraa päivän vaihtumista
+    const v = t.value || null;
+    if (t.id === 'histFrom') S.histFrom = v; else S.histTo = v && v < todayStr() ? v : null;
+    S.histLimit = 60; render(); return;
+  }
   if (t.id === 'importFile' && t.files[0]) { importFile(t.files[0]); t.value = ''; return; }
   if (t.matches('input.comment[data-field]')) saveComment(t);
 });
