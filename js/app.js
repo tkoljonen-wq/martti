@@ -217,7 +217,7 @@ function renderLog() {
     <button class="navbtn" data-act="prev" aria-label="Edellinen päivä">‹</button>
     <label class="datepick">
       <span class="lbl">${fiDate(S.date)}</span><span class="sub">${relDay(S.date)}</span>
-      <input type="date" id="dateInput" value="${S.date}" max="${today}" aria-label="Valitse päivä">
+      <input type="date" id="dateInput" value="${esc(S.date)}" max="${today}" aria-label="Valitse päivä">
     </label>
     <button class="navbtn" data-act="next" aria-label="Seuraava päivä" ${S.date >= today ? 'disabled' : ''}>›</button>
   </div>
@@ -326,13 +326,13 @@ function renderHistory() {
     let cells = '';
     if (dayHasRecord(d)) {
       cells += badgeLevel('🌙', d.nightLevel) + badgeLevel('☀️', d.dayLevel);
-      (d.stool || []).forEach(f => { cells += `<span class="badge ${f === 'verta' ? 'blood' : 'stool'}">${stoolLabel(f)}</span>`; });
+      (d.stool || []).forEach(f => { cells += `<span class="badge ${f === 'verta' ? 'blood' : 'stool'}">${esc(stoolLabel(f))}</span>`; });
       if (d.nightComment || d.dayComment || d.stoolComment) cells += '<span class="badge">💬</span>';
     }
     evs.forEach(e => { cells += `<span class="badge" title="${esc(e.text)}">${EVENT_TYPES[e.type]?.icon || '•'} ${esc(e.text.length > 18 ? e.text.slice(0, 17) + '…' : e.text)}</span>`; });
     if (!cells) cells = '<span class="nodata">ei kirjausta</span>';
     const [wd, dm] = fiDate(date).split(' ');
-    rows += `<div class="hrow" data-act="openDay" data-date="${date}"><div class="d"><b>${dm.split('.').slice(0, 2).join('.')}.</b><span>${wd}${i === 0 ? ' · tänään' : ''}</span></div><div class="cells">${cells}</div></div>`;
+    rows += `<div class="hrow" data-act="openDay" data-date="${esc(date)}"><div class="d"><b>${dm.split('.').slice(0, 2).join('.')}.</b><span>${wd}${i === 0 ? ' · tänään' : ''}</span></div><div class="cells">${cells}</div></div>`;
     (starts[date] || []).forEach(r => { rows += `<div class="hsep">▶ Aloitettu ${fiDate(date, false)}: ${REGIMEN_KINDS[r.kind].icon} ${esc(r.name)}</div>`; });
   }
   return `${localBanner()}
@@ -358,8 +358,8 @@ function renderSettings() {
     <h2>📤 Vienti tekoälylle</h2>
     <p class="hint">Markdown-tiedosto sisältää tulkintaohjeet, ruokavalio- ja lääkityshistorian sekä päiväkohtaiset kirjaukset jaksoittain. Anna se tekoälylle liitteenä tai liitä sisältö keskusteluun.</p>
     <div class="btnrow" style="margin-bottom:12px">
-      <label class="field" style="flex:1"><span>Alkaen</span><input type="date" id="exFrom" value="${r.from}" max="${r.to}"></label>
-      <label class="field" style="flex:1"><span>Päättyen</span><input type="date" id="exTo" value="${r.to}" max="${r.to}"></label>
+      <label class="field" style="flex:1"><span>Alkaen</span><input type="date" id="exFrom" value="${esc(r.from)}" max="${esc(r.to)}"></label>
+      <label class="field" style="flex:1"><span>Päättyen</span><input type="date" id="exTo" value="${esc(r.to)}" max="${esc(r.to)}"></label>
     </div>
     <div class="btnrow">
       <button class="btn primary" data-act="exportMd">📄 Lataa (.md)</button>
@@ -416,7 +416,7 @@ function openEventDialog(ev) {
   const isNew = !ev.id;
   dlg.innerHTML = `<form method="dialog" id="evForm">
     <h2>${T.icon} ${T.label}</h2>
-    <label class="field"><span>Päivämäärä</span><input type="date" name="date" value="${ev.date}" max="${todayStr()}" required></label>
+    <label class="field"><span>Päivämäärä</span><input type="date" name="date" value="${esc(ev.date)}" max="${todayStr()}" required></label>
     ${isNote
       ? `<label class="field"><span>${T.what}</span><textarea name="text" required>${esc(ev.text || '')}</textarea></label>`
       : `<label class="field"><span>${T.what}</span><input name="text" list="evList" value="${esc(ev.text || '')}" required autocomplete="off"></label>
@@ -463,8 +463,8 @@ function openRegimenDialog(r, focusEnd = false) {
     ${datalist('regList', S.data.regimens.filter(x => x.kind === r.kind).map(x => x.name))}
     <label class="field"><span>${K.details} (vapaaehtoinen)</span><input name="details" value="${esc(r.details || '')}" autocomplete="off"></label>
     <div class="btnrow">
-      <label class="field" style="flex:1"><span>Aloitettu</span><input type="date" name="startDate" value="${r.startDate || todayStr()}" required></label>
-      <label class="field" style="flex:1"><span>Lopetettu (viimeinen päivä)</span><input type="date" name="endDate" value="${r.endDate || ''}"></label>
+      <label class="field" style="flex:1"><span>Aloitettu</span><input type="date" name="startDate" value="${esc(r.startDate || todayStr())}" required></label>
+      <label class="field" style="flex:1"><span>Lopetettu (viimeinen päivä)</span><input type="date" name="endDate" value="${esc(r.endDate || '')}"></label>
     </div>
     <p class="hint">Jätä lopetuspäivä tyhjäksi, jos käyttö jatkuu.</p>
     <p class="error" id="regErr"></p>
@@ -531,6 +531,17 @@ async function importFile(file) {
   try {
     const data = JSON.parse(await file.text());
     if (!data || !Array.isArray(data.days) || !Array.isArray(data.events) || !Array.isArray(data.regimens)) throw new Error('Tiedosto ei ole tämän sovelluksen varmuuskopio.');
+    // Hyväksytään vain kelvolliset päivämäärät, tunnisteet ja arvot
+    const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+    const okId = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v);
+    const flags = STOOL_FLAGS.map(f => f.id);
+    const lvl = v => ([0, 1, 2, 3].includes(v) ? v : null);
+    data.days = data.days.filter(d => isDate(d?.date)).map(d => ({
+      ...d, nightLevel: lvl(d.nightLevel), dayLevel: lvl(d.dayLevel),
+      stool: Array.isArray(d.stool) ? d.stool.filter(f => flags.includes(f)) : [],
+    }));
+    data.events = data.events.filter(e => okId(e?.id) && isDate(e.date) && EVENT_TYPES[e.type] && typeof e.text === 'string');
+    data.regimens = data.regimens.filter(r => okId(r?.id) && REGIMEN_KINDS[r.kind] && isDate(r.startDate) && (!r.endDate || isDate(r.endDate)) && typeof r.name === 'string');
     const n = data.days.length + data.events.length + data.regimens.length;
     if (!confirm(`Tuodaanko ${n} tietuetta (${data.dog?.name || '?'}) koiralle ${dog().name}? Saman tunnisteen tiedot korvataan.`)) return;
     const count = await S.store.importData(S.dogId, data);
