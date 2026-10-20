@@ -44,6 +44,14 @@ export const LEVELS = [
   { v: 3, label: '3', long: 'vakava' },
 ];
 
+// Asteikolla 0–3 kirjattavat oireet (päivän kentät)
+export const SYMPTOMS = [
+  { field: 'nightLevel', comment: 'nightComment', icon: '🌙', label: 'Närästys yöllä', short: 'Yö', sub: 'edeltävä yö' },
+  { field: 'dayLevel', comment: 'dayComment', icon: '☀️', label: 'Närästys päivällä', short: 'Päivä' },
+  { field: 'lickSurfaceLevel', comment: 'lickSurfaceComment', icon: '👅', label: 'Pintojen nuoleminen', short: 'Pinnat' },
+  { field: 'lickSelfLevel', comment: 'lickSelfComment', icon: '🐾', label: 'Itsensä nuoleminen', short: 'Itsensä' },
+];
+
 export const STOOL_FLAGS = [
   { id: 'limainen', label: 'Limainen' },
   { id: 'loysa', label: 'Löysä' },
@@ -67,6 +75,6 @@ export const REGIMEN_KINDS = {
 // Onko päivälle tehty jokin oirekirjaus
 export function dayHasRecord(d) {
   if (!d) return false;
-  return d.nightLevel != null || d.dayLevel != null || (d.stool && d.stool.length > 0) ||
-    !!d.nightComment || !!d.dayComment || !!d.stoolComment;
+  return SYMPTOMS.some(s => d[s.field] != null || !!d[s.comment]) ||
+    (d.stool && d.stool.length > 0) || !!d.stoolComment;
 }

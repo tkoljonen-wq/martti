@@ -2,12 +2,12 @@ import { createStore } from './store.js';
 import { defaultMembers } from '../firebase-config.js';
 import {
   todayStr, addDays, daysBetween, fiDate, newId, esc, isActive, dayHasRecord,
-  LEVELS, STOOL_FLAGS, stoolLabel, EVENT_TYPES, REGIMEN_KINDS,
+  LEVELS, SYMPTOMS, STOOL_FLAGS, stoolLabel, EVENT_TYPES, REGIMEN_KINDS,
 } from './util.js';
 import { buildMarkdown, buildJSON, dataRange } from './export.js';
 import { buildChart, dayIndexAt, changesIn, kindIcon, CHART_W, EVENT_COLORS, KIND_COLORS } from './chart.js';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const $ = s => document.querySelector(s);
 const main = $('#main');
 const dlg = $('#dlg');
@@ -219,9 +219,9 @@ function relDay(date) {
   return 'Tulevaisuudessa';
 }
 
-function levelCard(field, commentField, title, sub, d) {
+function levelCard({ field, comment: commentField, icon, label, sub }, d) {
   return `<section class="card">
-    <h2>${title}${sub ? ` <small>${sub}</small>` : ''}</h2>
+    <h2>${icon} ${label}${sub ? ` <small>${sub}</small>` : ''}</h2>
     <div class="levels" data-field="${field}">
       ${LEVELS.map(l => `<button type="button" data-level="${l.v}" class="${d[field] === l.v ? 'sel' : ''}">${l.label}<small>${l.v === 0 ? 'ei oireita' : l.long}</small></button>`).join('')}
     </div>
@@ -251,8 +251,7 @@ function renderLog() {
   ${S.date !== today ? '<button class="btn small today-link" data-act="today">↩ Siirry tähän päivään</button>' : ''}
   ${installHtml()}
   ${localBanner()}
-  ${levelCard('nightLevel', 'nightComment', '🌙 Närästys yöllä', 'edeltävä yö', d)}
-  ${levelCard('dayLevel', 'dayComment', '☀️ Närästys päivällä', '', d)}
+  ${SYMPTOMS.map(s => levelCard(s, d)).join('')}
   <section class="card">
     <h2>💩 Uloste</h2>
     <p class="hint">Valitse yksi tai useampi. Jos mitään ei valita, uloste katsotaan normaaliksi.</p>
@@ -369,9 +368,9 @@ function renderHistory() {
       shown++;
       let cells = '';
       if (dayHasRecord(d)) {
-        cells += badgeLevel('🌙', d.nightLevel) + badgeLevel('☀️', d.dayLevel);
+        cells += SYMPTOMS.map(s => badgeLevel(s.icon, d[s.field])).join('');
         (d.stool || []).forEach(f => { cells += `<span class="badge ${f === 'verta' ? 'blood' : 'stool'}">${esc(stoolLabel(f))}</span>`; });
-        if (d.nightComment || d.dayComment || d.stoolComment) cells += '<span class="badge">💬</span>';
+        if (SYMPTOMS.some(s => d[s.comment]) || d.stoolComment) cells += '<span class="badge">💬</span>';
       }
       evs.forEach(e => { cells += `<span class="badge" title="${esc(e.text)}">${EVENT_TYPES[e.type]?.icon || '•'} ${esc(e.text.length > 18 ? e.text.slice(0, 17) + '…' : e.text)}</span>`; });
       const [wd, dm] = fiDate(date).split(' ');
@@ -449,7 +448,7 @@ function chartDayCard(date) {
   const d = dayOf(date);
   const evs = S.data.events.filter(e => e.date === date);
   const chg = changesIn(S.data.regimens, date, date);
-  const lvl = (icon, label, v, c) => `<p class="ch-line-item">${icon} ${label}: ${v == null ? '<span class="muted">ei kirjattu</span>' : `<span class="badge l${v}">${v === 0 ? 'ei närästystä' : `${v} – ${LEVELS[v].long}`}</span>`}${c ? ` <span class="muted">${esc(c)}</span>` : ''}</p>`;
+  const lvl = (icon, label, v, c) => `<p class="ch-line-item">${icon} ${label}: ${v == null ? '<span class="muted">ei kirjattu</span>' : `<span class="badge l${v}">${v === 0 ? 'ei oireita' : `${v} – ${LEVELS[v].long}`}</span>`}${c ? ` <span class="muted">${esc(c)}</span>` : ''}</p>`;
   const stool = d.stool || [];
   return `<section class="card">
     <div class="ch-daynav">
@@ -457,8 +456,7 @@ function chartDayCard(date) {
       <h2 style="margin:0;flex:1;justify-content:center">${fiDate(date)}</h2>
       <button class="btn small" data-act="chartStep" data-step="1" aria-label="Seuraava päivä" ${date >= todayStr() ? 'disabled' : ''}>›</button>
     </div>
-    ${lvl('🌙', 'Yö', d.nightLevel, d.nightComment)}
-    ${lvl('☀️', 'Päivä', d.dayLevel, d.dayComment)}
+    ${SYMPTOMS.map(s => lvl(s.icon, s.label, d[s.field], d[s.comment])).join('')}
     <p class="ch-line-item">💩 Uloste: ${stool.length ? stool.map(f => `<span class="badge ${f === 'verta' ? 'blood' : 'stool'}">${esc(stoolLabel(f))}</span>`).join(' ') : (dayHasRecord(d) ? 'normaali' : '<span class="muted">ei kirjattu</span>')}${d.stoolComment ? ` <span class="muted">${esc(d.stoolComment)}</span>` : ''}</p>
     ${evs.map(e => `<p class="ch-line-item"><span class="ch-dot" style="background:${EVENT_COLORS[e.type]}"></span>${EVENT_TYPES[e.type]?.icon || ''} ${esc(e.text)}${e.comment ? ` <span class="muted">${esc(e.comment)}</span>` : ''}</p>`).join('')}
     ${chg.map(c => `<p class="ch-line-item"><span style="color:${KIND_COLORS[c.r.kind]}">${c.start ? '▶' : '■'}</span> ${c.start ? 'Aloitettu' : 'Lopetettu'}: ${kindIcon(c.r.kind)} ${esc(c.r.name)}</p>`).join('')}
@@ -684,7 +682,7 @@ async function importFile(file) {
     const flags = STOOL_FLAGS.map(f => f.id);
     const lvl = v => ([0, 1, 2, 3].includes(v) ? v : null);
     data.days = data.days.filter(d => isDate(d?.date)).map(d => ({
-      ...d, nightLevel: lvl(d.nightLevel), dayLevel: lvl(d.dayLevel),
+      ...d, ...Object.fromEntries(SYMPTOMS.map(s => [s.field, lvl(d[s.field])])),
       stool: Array.isArray(d.stool) ? d.stool.filter(f => flags.includes(f)) : [],
     }));
     data.events = data.events.filter(e => okId(e?.id) && isDate(e.date) && EVENT_TYPES[e.type] && typeof e.text === 'string');

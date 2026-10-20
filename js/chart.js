@@ -1,6 +1,6 @@
-// Kuvaaja-välilehden SVG: närästys yöllä ja päivällä (0–3) sekä merkintärivit
+// Kuvaaja-välilehden SVG: närästys yöllä ja päivällä sekä nuoleminen (0–3) sekä merkintärivit
 // ulosteelle ja satunnaisille tapahtumille. Ruoka- ja lääkemuutokset pystyviivoina.
-import { addDays, daysBetween, parse, EVENT_TYPES, REGIMEN_KINDS } from './util.js';
+import { addDays, daysBetween, parse, EVENT_TYPES, REGIMEN_KINDS, SYMPTOMS } from './util.js';
 
 export const CHART_W = 320;
 export const CHART_L = 34; // vasen marginaali tasoille ja rivien kuvakkeille
@@ -42,7 +42,7 @@ export function buildChart(data, from, to, sel) {
   });
   y += 12;
 
-  // Närästyskuvaajat
+  // Oirekuvaajat (närästys, nuoleminen)
   const levelChart = (field, title) => {
     const t = y + 20, h = LEVEL_H;
     const yv = v => t + (3 - v) * h / 3;
@@ -67,8 +67,7 @@ export function buildChart(data, from, to, sel) {
     y = t + h + 10;
     return s;
   };
-  parts.push(levelChart('nightLevel', '🌙 Närästys yöllä'));
-  parts.push(levelChart('dayLevel', '☀️ Närästys päivällä'));
+  SYMPTOMS.forEach(s => parts.push(levelChart(s.field, `${s.icon} ${s.label}`)));
 
   // Merkintärivit
   const rowH = 17;
@@ -118,7 +117,7 @@ export function buildChart(data, from, to, sel) {
     ? `<rect x="${(CHART_L + selIdx * cw).toFixed(1)}" y="${top}" width="${Math.max(cw, 2).toFixed(1)}" height="${bottom - top}" class="ch-sel"/>`
     : '';
 
-  return `<svg class="chart" viewBox="0 0 ${CHART_W} ${H}" data-act="chartTap" data-from="${from}" data-n="${n}" role="img" aria-label="Närästyskuvaaja ${from}–${to}">
+  return `<svg class="chart" viewBox="0 0 ${CHART_W} ${H}" data-act="chartTap" data-from="${from}" data-n="${n}" role="img" aria-label="Oirekuvaaja ${from}–${to}">
     ${hi}${parts.join('')}${lines}${ax}
   </svg>`;
 }

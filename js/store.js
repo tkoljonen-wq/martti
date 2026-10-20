@@ -3,7 +3,7 @@
 // Rakenne (Firestore). Koiran tiedot ovat yhteisiä kaikille members-listan tileille:
 //   dogs/{dogId}                    { name, background, members: [email], createdAt }
 //   dogs/{dogId}/regimens/{id}      { kind: food|med, name, details, startDate, endDate }
-//   dogs/{dogId}/days/{YYYY-MM-DD}  { nightLevel, nightComment, dayLevel, dayComment, stool[], stoolComment }
+//   dogs/{dogId}/days/{YYYY-MM-DD}  { nightLevel, nightComment, dayLevel, dayComment, lickSurfaceLevel, lickSurfaceComment, lickSelfLevel, lickSelfComment, stool[], stoolComment }
 //   dogs/{dogId}/events/{id}        { type: treat|forbidden|med|note, date, text, comment }
 
 import { firebaseConfig } from '../firebase-config.js';

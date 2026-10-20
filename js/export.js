@@ -1,6 +1,6 @@
 // Vienti tekoälylle (Markdown) ja varmuuskopio (JSON)
 import {
-  todayStr, addDays, fiDate, isActive, dayHasRecord, LEVELS, STOOL_FLAGS, stoolLabel,
+  todayStr, addDays, fiDate, isActive, dayHasRecord, LEVELS, SYMPTOMS, STOOL_FLAGS, stoolLabel,
   EVENT_TYPES, REGIMEN_KINDS,
 } from './util.js';
 
@@ -25,7 +25,7 @@ const avg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).to
 function levelStats(values) {
   const rec = values.filter(v => v != null);
   const counts = [0, 1, 2, 3].map(l => rec.filter(v => v === l).length);
-  return `kirjattu ${rec.length} kpl; ei närästystä ${counts[0]}, lievä ${counts[1]}, kohtalainen ${counts[2]}, vakava ${counts[3]}; keskiarvo ${avg(rec)}`;
+  return `kirjattu ${rec.length} kpl; ei oireita ${counts[0]}, lievä ${counts[1]}, kohtalainen ${counts[2]}, vakava ${counts[3]}; keskiarvo ${avg(rec)}`;
 }
 
 export function buildMarkdown(dog, data, from, to) {
@@ -44,7 +44,7 @@ export function buildMarkdown(dog, data, from, to) {
   if (dog.background) L.push(`- Taustatiedot: ${cell(dog.background)}`);
   L.push('');
   L.push('## Tulkintaohjeet', '');
-  L.push('- Närästyksen asteikko: 0 = ei närästystä, 1 = lievä, 2 = kohtalainen, 3 = vakava. "–" = ei kirjattu.');
+  L.push(`- Oireet arvioidaan asteikolla 0 = ei oireita, 1 = lievä, 2 = kohtalainen, 3 = vakava. "–" = ei kirjattu. Oireet: ${SYMPTOMS.map(s => s.label.toLowerCase()).join(', ')}.`);
   L.push('- "Yö" tarkoittaa kirjauspäivää edeltävää yötä (kirjataan aamulla). "Päivä" tarkoittaa kirjauspäivän päiväaikaa.');
   L.push(`- Ulosteen havainnot: ${STOOL_FLAGS.map(f => f.label.toLowerCase()).join(', ')}. Jos päivälle on tehty oirekirjaus mutta ulostehavaintoja ei ole, uloste on ollut normaali.`);
   L.push('- Päivä, jolla ei ole mitään kirjauksia, on merkitty "ei kirjausta" – siitä ei tiedetä oireita.');
@@ -81,13 +81,12 @@ export function buildMarkdown(dog, data, from, to) {
     L.push(`- Perusravinto: ${foods.length ? foods.map(regText).join('; ') : 'ei kirjattu'}`);
     L.push(`- Jatkuva lääkitys: ${meds.length ? meds.map(regText).join('; ') : 'ei'}`);
     L.push(`- Päiviä, joilla oirekirjaus: ${days.length} / ${p.dates.length}`);
-    L.push(`- Närästys yöllä: ${levelStats(days.map(d => d.nightLevel))}`);
-    L.push(`- Närästys päivällä: ${levelStats(days.map(d => d.dayLevel))}`);
+    SYMPTOMS.forEach(s => L.push(`- ${s.label}: ${levelStats(days.map(d => d[s.field]))}`));
     L.push(`- Uloste: ${STOOL_FLAGS.map(f => `${f.label.toLowerCase()} ${days.filter(d => (d.stool || []).includes(f.id)).length} pv`).join(', ')}`);
     L.push(`- Satunnaiset: ${['treat', 'forbidden', 'med'].map(t => `${EVENT_TYPES[t].short.toLowerCase()} ${pEvents.filter(e => e.type === t).length} kpl`).join(', ')}`);
     L.push('');
-    L.push('| Pvm | Närästys yö | Närästys päivä | Uloste | Satunnaiset | Muistiinpanot |');
-    L.push('|---|---|---|---|---|---|');
+    L.push(`| Pvm | ${SYMPTOMS.map(s => s.label).join(' | ')} | Uloste | Satunnaiset | Muistiinpanot |`);
+    L.push(`|---|${SYMPTOMS.map(() => '---|').join('')}---|---|---|`);
     p.dates.forEach(date => {
       const d = data.days[date];
       const evs = evByDate[date] || [];
@@ -96,7 +95,7 @@ export function buildMarkdown(dog, data, from, to) {
       const notes = evs.filter(e => e.type === 'note').map(e => e.text + (e.comment ? ` (${e.comment})` : '')).join('; ');
       const label = `${date} ${fiDate(date).split(' ')[0]}`;
       if (!dayHasRecord(d) && !evs.length) {
-        L.push(`| ${label} | ei kirjausta | | | | |`);
+        L.push(`| ${label} | ei kirjausta |${' |'.repeat(SYMPTOMS.length + 2)}`);
         return;
       }
       let stool = '–';
@@ -104,7 +103,7 @@ export function buildMarkdown(dog, data, from, to) {
         stool = (d.stool || []).length ? d.stool.map(stoolLabel).join(', ').toLowerCase() : 'normaali';
         if (d.stoolComment) stool += ` (${d.stoolComment})`;
       }
-      L.push(`| ${label} | ${cell(lvl(d?.nightLevel, d?.nightComment))} | ${cell(lvl(d?.dayLevel, d?.dayComment))} | ${cell(stool)} | ${cell(sat)} | ${cell(notes)} |`);
+      L.push(`| ${label} | ${SYMPTOMS.map(s => cell(lvl(d?.[s.field], d?.[s.comment]))).join(' | ')} | ${cell(stool)} | ${cell(sat)} | ${cell(notes)} |`);
     });
     L.push('');
   });
@@ -122,7 +121,8 @@ export function buildJSON(dog, data) {
       ...Object.fromEntries(Object.keys(EVENT_TYPES).map(k => [`${k}Templates`, dog[`${k}Templates`] || []])),
     },
     scales: {
-      heartburn: Object.fromEntries(LEVELS.map(l => [l.v, l.long])),
+      symptomLevels: Object.fromEntries(LEVELS.map(l => [l.v, l.v === 0 ? 'ei oireita' : l.long])),
+      symptoms: Object.fromEntries(SYMPTOMS.map(s => [s.field, s.label])),
       stool: Object.fromEntries(STOOL_FLAGS.map(f => [f.id, f.label])),
       eventTypes: Object.fromEntries(Object.entries(EVENT_TYPES).map(([k, v]) => [k, v.label])),
     },

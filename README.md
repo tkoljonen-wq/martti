@@ -8,7 +8,7 @@ Ilman Firebase-asetuksia sovellus toimii **paikallisessa testitilassa**: tiedot 
 
 | Mitä | Missä |
 |---|---|
-| Närästys yöllä ja päivällä (ei / 1 / 2 / 3), kummallekin vapaaehtoinen kommentti | Kirjaa |
+| Närästys yöllä ja päivällä sekä pintojen ja itsensä nuoleminen (ei / 1 / 2 / 3), jokaiselle vapaaehtoinen kommentti | Kirjaa |
 | Uloste: limainen, löysä, tavallista tiheämpi, verta (normaali, jos mitään ei valita) | Kirjaa |
 | Herkut ja satunnaiset ruoat, kielletyt/vahingossa syödyt, satunnaiset lääkkeet, muistiinpanot | Kirjaa |
 | Perusravinto ja jatkuva lääkitys (aloitus- ja lopetuspäivä) | Ruoka & lääkkeet |
@@ -19,7 +19,7 @@ Ilman Firebase-asetuksia sovellus toimii **paikallisessa testitilassa**: tiedot 
 
 ## Kuvaaja
 
-Kuvaaja-välilehdellä näkyvät närästys yöllä ja päivällä omina viivakuvaajinaan (puuttuva kirjaus katkaisee viivan) sekä merkintärivit ulosteelle (veri punaisella) ja satunnaisille tapahtumille. Ruoka- ja lääkemuutokset näkyvät pystyviivoina (▶ aloitus, ■ lopetus). Kun kuvaajaa napauttaa, sen päivän tiedot avautuvat kuvaajan alle. Aikaväliksi voi valita 14, 30 tai 90 päivää tai kaikki tiedot.
+Kuvaaja-välilehdellä näkyvät närästys yöllä ja päivällä sekä pintojen ja itsensä nuoleminen omina viivakuvaajinaan (puuttuva kirjaus katkaisee viivan) sekä merkintärivit ulosteelle (veri punaisella) ja satunnaisille tapahtumille. Ruoka- ja lääkemuutokset näkyvät pystyviivoina (▶ aloitus, ■ lopetus). Kun kuvaajaa napauttaa, sen päivän tiedot avautuvat kuvaajan alle. Aikaväliksi voi valita 14, 30 tai 90 päivää tai kaikki tiedot.
 
 ## Vienti tekoälylle
 
@@ -35,6 +35,7 @@ Käytössä: Google-kirjautuminen, sallittu domain `tkoljonen-wq.github.io`, Fir
 
 - Julkaistu: https://tkoljonen-wq.github.io/martti/
 - Testattu: kirjautuminen ja pilvitallennus localhostissa (tkoljonen@gmail.com)
+- Versio 1.4.0: pintojen ja itsensä nuoleminen (0–3) närästyksen rinnalle
 - Versio 1.3.0: vakiovastaukset ja Kuvaaja-välilehti
 - Asennettu Android-puhelimiin (Timo ja Pia). Jos Chrome väittää sovelluksen olevan "jo asennettu", päivitä sivu kahdesti ja sulje välilehti, jotta uusi manifest otetaan käyttöön.
 
